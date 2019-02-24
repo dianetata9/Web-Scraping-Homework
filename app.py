@@ -1,73 +1,35 @@
 import sys
-from flask import Flask, render_template, redirect
+from flask import Flask, render_template, jsonify, redirect
 import pymongo
 import scrape_mars
 
-# create instance of Flask app
+sys.setrecursionlimit(2000)
 app = Flask(__name__)
 
-
-client = pymongo.MongoClient()
+conn = 'mongodb://localhost:27017'
+client = pymongo.MongoClient(conn)
+# Declare the database
 db = client.mars_db
-
-
-collection = db.mars
-collection_image = db.mars
-collection_hemisphere = db.mars
+# Declare the collection
+collection = db.mars_facts
 
 
 
-# create route that renders index.html template
+@app.route('/scrape')
+def scrape():
+   # db.collection.remove()
+    mars = scrape_mars.scrape_info()
+    print("\n\n\n")
+    #print(mars)
+    #mars = {'news_title': "NASA's Next Mars Lander Spreads its Solar Wings", 'news_paragraph': "NASA's next mission to Mars passed a key test Tuesday, extending the solar arrays that will power the InSight spacecraft once it lands on the Red Planet this November.", 'featured_image': 'https://www.jpl.nasa.gov//spaceimages/images/largesize/PIA20318_hires.jpg', 'mars_weather': 'Sol 1945 (Jan 25, 2018), Sunny, high -22C/-7F, low -78C/-108F, pressure at 7.51 hPa, daylight 05:43-17:28', 'hemisphere_img_url': [{'image title': 'Cerberus Hemisphere Enhanced', 'image url': 'https://astrogeology.usgs.gov//cache/images/cfa62af2557222a02478f1fcd781d445_cerberus_enhanced.tif_full.jpg'}, {'image title': 'Schiaparelli Hemisphere Enhanced', 'image url': 'https://astrogeology.usgs.gov//cache/images/3cdd1cbf5e0813bba925c9030d13b62e_schiaparelli_enhanced.tif_full.jpg'}, {'image title': 'Syrtis Major Hemisphere Enhanced', 'image url': 'https://astrogeology.usgs.gov//cache/images/ae209b4e408bb6c3e67b6af38168cf28_syrtis_major_enhanced.tif_full.jpg'}, {'image title': 'Valles Marineris Hemisphere Enhanced', 'image url': 'https://astrogeology.usgs.gov//cache/images/ae209b4e408bb6c3e67b6af38168cf28_syrtis_major_enhanced.tif_full.jpg'}]}
+    collection.update({}, mars, upsert=True)
+    return redirect("/")
+
 @app.route("/")
 def home():
-
-
-    News_dict= db.collection.find()
-
-    feature_Image_dict = db.collection_image.find()
-
-
-    #full_hemisphere_dict = db.collection_hemisphere.find()
-
+    mars = collection.find_one()
     
-
-    return render_template("index.html", News_dict = News_dict, 
-                                        feature_Image_dict = feature_Image_dict)
-                                        
-                                        #full_hemisphere_dict = full_hemisphere_dict
-
-
-@app.route("/scrape")
-def scrape():
-    db.collection.remove()
-
-    News_dict = missionMars.mars_news_function()
-    db.collection.insert_one(News_dict)
-
-    db.collection_image.remove()
-    feature_Image_dict = missionMars.Feature_Image_function()
-    db.collection_image.insert_one(feature_Image_dict)
-
-    #db.collection_hemisphere.remove()
-    #full_hemisphere_dict = missionMars.hemisphere_images()
-    #db.collection_hemisphere.insert_one(full_hemisphere_dict)
-
-
-    print('----------------')
-    print('----------------')
-    print(News_dict)
-    print('----------------')
-    print('----------------')
-    print(feature_Image_dict)
-    print('----------------')
-    print('----------------')
-    print(full_hemisphere_dict)
-    
-
-    
-    return redirect("http://localhost:5000/", code=302)
-
-
+    return render_template("index.html", mars = mars)
 
 
 if __name__ == "__main__":
